@@ -49,62 +49,62 @@
 
     new Chart(ctx, config);
   </script>
-</body>
+
   <h2>🧠 Valorant 戦績グラフ</h2>
-<canvas id="kdChart" width="400" height="200"></canvas>
-<canvas id="hsChart" width="400" height="200"></canvas>
+  <canvas id="kdChart" width="400" height="200"></canvas>
+  <canvas id="hsChart" width="400" height="200"></canvas>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  const matchData = [
-    { map: "Icebox", kd: 0.7, hs: 20 },
-    { map: "Haven", kd: 1.6, hs: 28 },
-    { map: "Haven", kd: 1.1, hs: 22 },
-    { map: "Ascent", kd: 0.7, hs: 16 },
-    { map: "Icebox", kd: 0.9, hs: 21 },
-    { map: "Corrode", kd: 1.5, hs: 26 },
-    { map: "Bind", kd: 1.2, hs: 18 },
-    { map: "Icebox", kd: 1.1, hs: 19 },
-    { map: "Lotus", kd: 0.7, hs: 24 },
-    { map: "Ascent", kd: 0.7, hs: 32 }
-  ];
+  <script>
+    const matchData = [
+      { map: "Icebox", kd: 0.7, hs: 20 },
+      { map: "Haven", kd: 1.6, hs: 28 },
+      { map: "Haven", kd: 1.1, hs: 22 },
+      { map: "Ascent", kd: 0.7, hs: 16 },
+      { map: "Icebox", kd: 0.9, hs: 21 },
+      { map: "Corrode", kd: 1.5, hs: 26 },
+      { map: "Bind", kd: 1.2, hs: 18 },
+      { map: "Icebox", kd: 1.1, hs: 19 },
+      { map: "Lotus", kd: 0.7, hs: 24 },
+      { map: "Ascent", kd: 0.7, hs: 32 }
+    ];
 
-  const maps = matchData.map(m => m.map);
-  const kdData = matchData.map(m => m.kd);
-  const hsData = matchData.map(m => m.hs);
+    const maps = matchData.map(m => m.map);
+    const kdData = matchData.map(m => m.kd);
+    const hsData = matchData.map(m => m.hs);
 
-  new Chart(document.getElementById("kdChart"), {
-    type: 'bar',
-    data: {
-      labels: maps,
-      datasets: [{
-        label: 'K/D',
-        data: kdData,
-        backgroundColor: 'rgba(54, 162, 235, 0.6)'
-      }]
-    },
-    options: {
-      scales: {
-        y: { beginAtZero: true }
+    new Chart(document.getElementById("kdChart"), {
+      type: 'bar',
+      data: {
+        labels: maps,
+        datasets: [{
+          label: 'K/D',
+          data: kdData,
+          backgroundColor: 'rgba(54, 162, 235, 0.6)'
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
       }
-    }
-  });
+    });
 
-  new Chart(document.getElementById("hsChart"), {
-    type: 'bar',
-    data: {
-      labels: maps,
-      datasets: [{
-        label: 'HS%',
-        data: hsData,
-        backgroundColor: 'rgba(255, 99, 132, 0.6)'
-      }]
-    },
-    options: {
-      scales: {
-        y: { beginAtZero: true }
+    new Chart(document.getElementById("hsChart"), {
+      type: 'bar',
+      data: {
+        labels: maps,
+        datasets: [{
+          label: 'HS%',
+          data: hsData,
+          backgroundColor: 'rgba(255, 99, 132, 0.6)'
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
       }
-    }
-  });
-</script>
+    });
+  </script>
+</body>
 </html>
