@@ -6,33 +6,25 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(to right, #1e1e2f, #2a2a3d);
-      color: #f0f0f0;
-    }
-    h1 {
-      text-align: center;
-      padding: 20px 0;
-      background-color: #111;
-      margin: 0;
+      font-family: sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
     }
     .map-section {
-      margin: 40px auto;
-      background: #2d2d3a;
-      padding: 20px;
-      border-radius: 15px;
-      width: 90%;
-      max-width: 1000px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
-      text-align: center;
+      margin-bottom: 40px;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .map-image {
-      width: 90%;
+      width: 80%;
       max-width: 600px;
-      border-radius: 10px;
-      margin-bottom: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
     }
     .chart-row {
       display: flex;
@@ -43,46 +35,13 @@
     canvas {
       max-width: 300px;
       max-height: 250px;
-      background-color: #fff;
-      border-radius: 8px;
-    }
-    #modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    #modal-content {
-      background: #fff;
-      color: #000;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 500px;
-      width: 90%;
-    }
-    #modal-close {
-      float: right;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 18px;
     }
   </style>
 </head>
 <body>
-  <h1>🧠 Valorant マップ別戦結グラフ</h1>
+  <h1>🧠 Valorant マップ別戦績グラフ</h1>
 
   <div id="charts-container"></div>
-
-  <div id="modal">
-    <div id="modal-content">
-      <span id="modal-close">&times;</span>
-      <div id="modal-body"></div>
-    </div>
-  </div>
 
   <script>
     const matchData = [
@@ -107,15 +66,16 @@
       "Haven": "https://img.gamewith.jp/article/thumbnail/rectangle_l/355148.png?date=1659955497"
     };
 
+    // 平均を出す
     const mapStats = {};
     matchData.forEach(({ map, kd, hs }) => {
-      if (!mapStats[map]) mapStats[map] = { totalKD: 0, totalHS: 0, count: 0, matches: [] };
+      if (!mapStats[map]) mapStats[map] = { totalKD: 0, totalHS: 0, count: 0 };
       mapStats[map].totalKD += kd;
       mapStats[map].totalHS += hs;
-      mapStats[map].count++;
-      mapStats[map].matches.push({ kd, hs });
+      mapStats[map].count += 1;
     });
 
+    // DOM生成 & Chart描画
     const container = document.getElementById('charts-container');
 
     Object.entries(mapStats).forEach(([map, stats], i) => {
@@ -157,31 +117,8 @@
           }]
         },
         options: {
-          onClick: () => showDetails(map, stats.matches),
           scales: {
-            y: {
-              beginAtZero: true,
-              max: 2,
-              title: { display: true, text: 'K/D' },
-              ticks: { stepSize: 0.5 }
-            }
-          },
-          plugins: {
-            annotation: {
-              annotations: {
-                line1: {
-                  type: 'line',
-                  yMin: 1,
-                  yMax: 1,
-                  borderColor: 'red',
-                  borderWidth: 2,
-                  label: {
-                    enabled: true,
-                    content: '目標: K/D 1'
-                  }
-                }
-              }
-            }
+            y: { beginAtZero: true, max: 2 }
           }
         }
       });
@@ -197,49 +134,12 @@
           }]
         },
         options: {
-          onClick: () => showDetails(map, stats.matches),
           scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              title: { display: true, text: 'HS%' },
-              ticks: { stepSize: 10 }
-            }
-          },
-          plugins: {
-            annotation: {
-              annotations: {
-                line2: {
-                  type: 'line',
-                  yMin: 25,
-                  yMax: 25,
-                  borderColor: 'green',
-                  borderWidth: 2,
-                  label: {
-                    enabled: true,
-                    content: '目標: 25%'
-                  }
-                }
-              }
-            }
+            y: { beginAtZero: true, max: 100 }
           }
         }
       });
     });
-
-    // モーダルの詳細表示
-    function showDetails(map, matches) {
-      const modal = document.getElementById('modal');
-      const modalBody = document.getElementById('modal-body');
-      modalBody.innerHTML = `<h3>${map} の試合詳細</h3><ul>` +
-        matches.map(m => `<li>K/D: ${m.kd}, HS: ${m.hs}%</li>`).join('') + '</ul>';
-      modal.style.display = 'flex';
-    }
-
-    document.getElementById('modal-close').onclick = () => {
-      document.getElementById('modal').style.display = 'none';
-    };
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
 </body>
 </html>
