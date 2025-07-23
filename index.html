@@ -2,80 +2,87 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Valorant Stats Graph</title>
+  <title>Valorant 戦績グラフ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .map-images {
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #1e1e2f, #2a2a3d);
+      color: #f0f0f0;
+    }
+    h1 {
+      text-align: center;
+      padding: 20px 0;
+      background-color: #111;
+      margin: 0;
+    }
+    .map-section {
+      margin: 40px auto;
+      background: #2d2d3a;
+      padding: 20px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 1000px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    .map-image {
+      width: 90%;
+      max-width: 600px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+    }
+    .chart-row {
       display: flex;
-      justify-content: space-around;
       flex-wrap: wrap;
-      margin-top: 20px;
+      justify-content: center;
+      gap: 20px;
     }
-    .map-images img {
-      width: 120px;
-      height: auto;
+    canvas {
+      max-width: 300px;
+      max-height: 250px;
+      background-color: #fff;
       border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
-    .map-label {
-      text-align: center;
-      font-size: 14px;
-      margin-top: 5px;
+    #modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
     }
-    .map-container {
-      text-align: center;
-      margin: 10px;
+    #modal-content {
+      background: #fff;
+      color: #000;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 90%;
+    }
+    #modal-close {
+      float: right;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 18px;
     }
   </style>
 </head>
 <body>
-  <h1>Valorant マップごとの勝率・K/D・HS率グラフ</h1>
-  <canvas id="mapStatsChart" width="800" height="400"></canvas>
+  <h1>🧠 Valorant マップ別戦結グラフ</h1>
 
-  <script>
-    const ctx = document.getElementById('mapStatsChart').getContext('2d');
+  <div id="charts-container"></div>
 
-    const data = {
-      labels: ['Ascent', 'Bind', 'Haven', 'Split', 'Icebox'],
-      datasets: [
-        {
-          label: '勝率',
-          data: [0.6, 0.55, 0.5, 0.53, 0.58],
-          backgroundColor: 'rgba(75, 192, 192, 0.6)'
-        },
-        {
-          label: 'K/D',
-          data: [1.2, 1.1, 1.0, 1.15, 1.25],
-          backgroundColor: 'rgba(153, 102, 255, 0.6)'
-        },
-        {
-          label: 'HS率',
-          data: [0.3, 0.28, 0.25, 0.29, 0.31],
-          backgroundColor: 'rgba(255, 159, 64, 0.6)'
-        }
-      ]
-    };
-
-    const config = {
-      type: 'bar',
-      data: data,
-      options: {
-        responsive: true,
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 2
-          }
-        }
-      }
-    };
-
-    new Chart(ctx, config);
-  </script>
-
-  <h2>🧠 Valorant 戦績グラフ（マップごと平均）</h2>
-  <canvas id="kdChart" width="600" height="300"></canvas>
-  <canvas id="hsChart" width="600" height="300"></canvas>
+  <div id="modal">
+    <div id="modal-content">
+      <span id="modal-close">&times;</span>
+      <div id="modal-body"></div>
+    </div>
+  </div>
 
   <script>
     const matchData = [
@@ -91,83 +98,148 @@
       { map: "Ascent", kd: 0.7, hs: 32 }
     ];
 
+    const mapImages = {
+      "Ascent": "https://vnoco.jp/guide/wp-content/uploads/2023/12/valorant-map-4.jpg",
+      "Bind": "https://img.gamewith.jp/img/fe86522d40ce292ca0f71d65e784913d.png",
+      "Lotus": "https://img.gamewith.jp/article/thumbnail/rectangle_l/383220.png?date=1673504785",
+      "Icebox": "https://img.gamewith.jp/article/thumbnail/rectangle/394659.png",
+      "Corrode": "https://assets.st-note.com/production/uploads/images/198723725/rectangle_large_type_2_cbc04c45d62273e178dec421dbe219a1.png?width=1200",
+      "Haven": "https://img.gamewith.jp/article/thumbnail/rectangle_l/355148.png?date=1659955497"
+    };
+
     const mapStats = {};
-
     matchData.forEach(({ map, kd, hs }) => {
-      if (!mapStats[map]) {
-        mapStats[map] = { kdSum: 0, hsSum: 0, count: 0 };
-      }
-      mapStats[map].kdSum += kd;
-      mapStats[map].hsSum += hs;
+      if (!mapStats[map]) mapStats[map] = { totalKD: 0, totalHS: 0, count: 0, matches: [] };
+      mapStats[map].totalKD += kd;
+      mapStats[map].totalHS += hs;
       mapStats[map].count++;
+      mapStats[map].matches.push({ kd, hs });
     });
 
-    const maps = Object.keys(mapStats);
-    const avgKdData = maps.map(map => mapStats[map].kdSum / mapStats[map].count);
-    const avgHsData = maps.map(map => mapStats[map].hsSum / mapStats[map].count);
+    const container = document.getElementById('charts-container');
 
-    new Chart(document.getElementById("kdChart"), {
-      type: 'bar',
-      data: {
-        labels: maps,
-        datasets: [{
-          label: '平均 K/D',
-          data: avgKdData,
-          backgroundColor: 'rgba(54, 162, 235, 0.6)'
-        }]
-      },
-      options: {
-        scales: {
-          y: { beginAtZero: true }
+    Object.entries(mapStats).forEach(([map, stats], i) => {
+      const avgKD = (stats.totalKD / stats.count).toFixed(2);
+      const avgHS = (stats.totalHS / stats.count).toFixed(1);
+
+      const section = document.createElement('div');
+      section.className = 'map-section';
+
+      const img = document.createElement('img');
+      img.src = mapImages[map] || "";
+      img.alt = map;
+      img.className = 'map-image';
+
+      const chartRow = document.createElement('div');
+      chartRow.className = 'chart-row';
+
+      const kdCanvas = document.createElement('canvas');
+      const hsCanvas = document.createElement('canvas');
+      kdCanvas.id = `kdChart-${i}`;
+      hsCanvas.id = `hsChart-${i}`;
+
+      chartRow.appendChild(kdCanvas);
+      chartRow.appendChild(hsCanvas);
+
+      section.innerHTML += `<h2>${map}</h2>`;
+      section.appendChild(img);
+      section.appendChild(chartRow);
+      container.appendChild(section);
+
+      new Chart(kdCanvas, {
+        type: 'bar',
+        data: {
+          labels: [map],
+          datasets: [{
+            label: '平均K/D',
+            data: [avgKD],
+            backgroundColor: 'rgba(54, 162, 235, 0.7)'
+          }]
+        },
+        options: {
+          onClick: () => showDetails(map, stats.matches),
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 2,
+              title: { display: true, text: 'K/D' },
+              ticks: { stepSize: 0.5 }
+            }
+          },
+          plugins: {
+            annotation: {
+              annotations: {
+                line1: {
+                  type: 'line',
+                  yMin: 1,
+                  yMax: 1,
+                  borderColor: 'red',
+                  borderWidth: 2,
+                  label: {
+                    enabled: true,
+                    content: '目標: K/D 1'
+                  }
+                }
+              }
+            }
+          }
         }
-      }
+      });
+
+      new Chart(hsCanvas, {
+        type: 'bar',
+        data: {
+          labels: [map],
+          datasets: [{
+            label: '平均HS%',
+            data: [avgHS],
+            backgroundColor: 'rgba(255, 99, 132, 0.7)'
+          }]
+        },
+        options: {
+          onClick: () => showDetails(map, stats.matches),
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              title: { display: true, text: 'HS%' },
+              ticks: { stepSize: 10 }
+            }
+          },
+          plugins: {
+            annotation: {
+              annotations: {
+                line2: {
+                  type: 'line',
+                  yMin: 25,
+                  yMax: 25,
+                  borderColor: 'green',
+                  borderWidth: 2,
+                  label: {
+                    enabled: true,
+                    content: '目標: 25%'
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
     });
 
-    new Chart(document.getElementById("hsChart"), {
-      type: 'bar',
-      data: {
-        labels: maps,
-        datasets: [{
-          label: '平均 HS%',
-          data: avgHsData,
-          backgroundColor: 'rgba(255, 99, 132, 0.6)'
-        }]
-      },
-      options: {
-        scales: {
-          y: { beginAtZero: true }
-        }
-      }
-    });
+    // モーダルの詳細表示
+    function showDetails(map, matches) {
+      const modal = document.getElementById('modal');
+      const modalBody = document.getElementById('modal-body');
+      modalBody.innerHTML = `<h3>${map} の試合詳細</h3><ul>` +
+        matches.map(m => `<li>K/D: ${m.kd}, HS: ${m.hs}%</li>`).join('') + '</ul>';
+      modal.style.display = 'flex';
+    }
+
+    document.getElementById('modal-close').onclick = () => {
+      document.getElementById('modal').style.display = 'none';
+    };
   </script>
-
-  <!-- マップ画像表示 -->
-  <div class="map-images">
-    <div class="map-container">
-      <img src="https://vnoco.jp/guide/wp-content/uploads/2023/12/valorant-map-4.jpg" alt="Ascent">
-      <div class="map-label">Ascent</div>
-    </div>
-    <div class="map-container">
-      <img src="https://img.gamewith.jp/img/fe86522d40ce292ca0f71d65e784913d.png" alt="Bind">
-      <div class="map-label">Bind</div>
-    </div>
-    <div class="map-container">
-      <img src="https://img.gamewith.jp/article/thumbnail/rectangle_l/355148.png?date=1659955497" alt="Haven">
-      <div class="map-label">Haven</div>
-    </div>
-    <div class="map-container">
-      <img src="https://img.gamewith.jp/article/thumbnail/rectangle_l/383220.png?date=1673504785" alt="Lotus">
-      <div class="map-label">Lotus</div>
-    </div>
-    <div class="map-container">
-      <img src="https://img.gamewith.jp/article/thumbnail/rectangle/394659.png" alt="Icebox">
-      <div class="map-label">Icebox</div>
-    </div>
-    <div class="map-container">
-      <img src="https://assets.st-note.com/production/uploads/images/198723725/rectangle_large_type_2_cbc04c45d62273e178dec421dbe219a1.png?width=1200" alt="Corrode">
-      <div class="map-label">Corrode</div>
-    </div>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0"></script>
 </body>
 </html>
