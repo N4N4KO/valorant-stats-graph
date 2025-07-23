@@ -49,5 +49,76 @@
 
     new Chart(ctx, config);
   </script>
+  <!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Valorant 戦績グラフ</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+    canvas { max-width: 100%; margin-bottom: 40px; }
+  </style>
+</head>
+<body>
+  <h1>Valorant 戦績グラフ</h1>
+  <canvas id="kdChart"></canvas>
+  <canvas id="hsChart"></canvas>
+
+  <script>
+    const data = [
+      { date: "2024-07-20", map: "Icebox", agent: "Sova", score: "6:13", kd: 0.7, hs: 20, result: "Lose" },
+      { date: "2024-07-20", map: "Haven", agent: "Cypher", score: "14:12", kd: 1.6, hs: 28, result: "Win" },
+      { date: "2024-07-20", map: "Haven", agent: "Sova", score: "8:13", kd: 1.1, hs: 22, result: "Lose" },
+      { date: "2024-07-19", map: "Ascent", agent: "Sova", score: "11:13", kd: 0.7, hs: 16, result: "Lose" },
+      { date: "2024-07-19", map: "Icebox", agent: "Killjoy", score: "3:13", kd: 0.9, hs: 21, result: "Lose" },
+      { date: "2024-07-19", map: "Corrode", agent: "Gekko", score: "13:10", kd: 1.5, hs: 26, result: "Win" },
+      { date: "2024-07-19", map: "Bind", agent: "Skye", score: "14:12", kd: 1.2, hs: 18, result: "Win" },
+      { date: "2024-07-18", map: "Icebox", agent: "Sova", score: "9:13", kd: 1.1, hs: 19, result: "Lose" },
+      { date: "2024-07-18", map: "Lotus", agent: "Omen", score: "12:14", kd: 0.7, hs: 24, result: "Lose" },
+      { date: "2024-07-18", map: "Ascent", agent: "Sova", score: "9:13", kd: 0.7, hs: 32, result: "Lose" }
+    ];
+
+    const labels = data.map((match, i) => `${match.date} ${match.map}`);
+    const kdData = data.map(match => match.kd);
+    const hsData = data.map(match => match.hs);
+
+    const colors = data.map(match => match.result === "Win" ? "rgba(75, 192, 192, 0.7)" : "rgba(255, 99, 132, 0.7)");
+
+    new Chart(document.getElementById("kdChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "K/D",
+          data: kdData,
+          backgroundColor: colors
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { display: false }, title: { display: true, text: "K/D（勝敗別カラー）" } }
+      }
+    });
+
+    new Chart(document.getElementById("hsChart"), {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "HS%",
+          data: hsData,
+          backgroundColor: colors
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, max: 50 } },
+        plugins: { legend: { display: false }, title: { display: true, text: "HS%（勝敗別カラー）" } }
+      }
+    });
+  </script>
 </body>
 </html>
