@@ -34,6 +34,7 @@
       flex-direction: column;
       align-items: center;
       max-width: 300px;
+      cursor: pointer;
     }
 
     .map-image {
@@ -53,12 +54,62 @@
     canvas {
       width: 300px !important;
       height: 250px !important;
+      cursor: pointer;
+    }
+
+    /* モーダル */
+    #modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.7);
+    }
+
+    #modal-content {
+      background-color: #2a2a3d;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 600px;
+      color: white;
+    }
+
+    .close {
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    ul li {
+      padding: 5px 0;
+      border-bottom: 1px solid #555;
     }
   </style>
 </head>
 <body>
   <h1>🧠 Valorant マップ別戦績グラフ</h1>
   <div id="charts-container"></div>
+
+  <!-- モーダル -->
+  <div id="modal">
+    <div id="modal-content">
+      <span class="close" id="close-modal">&times;</span>
+      <h2 id="modal-title"></h2>
+      <ul id="modal-list"></ul>
+    </div>
+  </div>
 
   <script>
     const matchData = [
@@ -85,9 +136,10 @@
 
     const mapStats = {};
     matchData.forEach(({ map, kd, hs }) => {
-      if (!mapStats[map]) mapStats[map] = { totalKD: 0, totalHS: 0, count: 0 };
+      if (!mapStats[map]) mapStats[map] = { totalKD: 0, totalHS: 0, count: 0, matches: [] };
       mapStats[map].totalKD += kd;
       mapStats[map].totalHS += hs;
+      mapStats[map].matches.push({ kd, hs });
       mapStats[map].count += 1;
     });
 
@@ -109,6 +161,10 @@
       img.alt = map;
       img.className = 'map-image';
 
+      // クリックでモーダル表示
+      mapInfo.addEventListener('click', () => showModal(map, stats.matches));
+      img.addEventListener('click', () => showModal(map, stats.matches));
+
       mapInfo.appendChild(img);
 
       const chartGroup = document.createElement('div');
@@ -119,32 +175,16 @@
       kdCanvas.id = `kdChart-${i}`;
       hsCanvas.id = `hsChart-${i}`;
 
+      // グラフクリックでモーダル
+      kdCanvas.addEventListener('click', () => showModal(map, stats.matches));
+      hsCanvas.addEventListener('click', () => showModal(map, stats.matches));
+
       chartGroup.appendChild(kdCanvas);
       chartGroup.appendChild(hsCanvas);
 
       section.appendChild(mapInfo);
       section.appendChild(chartGroup);
       container.appendChild(section);
-
-      // グラフ平均線の追加用
-      const targetLine = {
-        id: 'targetLine',
-        beforeDraw: chart => {
-          const ctx = chart.ctx;
-          const yAxis = chart.scales['y'];
-          const yValue = map === "K/D" ? 1.0 : 25;
-          const y = yAxis.getPixelForValue(yValue);
-          ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(chart.chartArea.left, y);
-          ctx.lineTo(chart.chartArea.right, y);
-          ctx.strokeStyle = 'red';
-          ctx.lineWidth = 1;
-          ctx.setLineDash([5, 5]);
-          ctx.stroke();
-          ctx.restore();
-        }
-      };
 
       new Chart(kdCanvas, {
         type: 'bar',
@@ -157,21 +197,12 @@
           }]
         },
         options: {
-          plugins: {
-            legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            y: {
-              beginAtZero: true,
-              max: 2,
-              ticks: { color: 'white' }
-            },
-            x: {
-              ticks: { color: 'white' }
-            }
+            y: { beginAtZero: true, max: 2, ticks: { color: 'white' } },
+            x: { ticks: { color: 'white' } }
           }
-        },
-        plugins: [targetLine]
+        }
       });
 
       new Chart(hsCanvas, {
@@ -185,22 +216,35 @@
           }]
         },
         options: {
-          plugins: {
-            legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              ticks: { color: 'white' }
-            },
-            x: {
-              ticks: { color: 'white' }
-            }
+            y: { beginAtZero: true, max: 100, ticks: { color: 'white' } },
+            x: { ticks: { color: 'white' } }
           }
         }
       });
     });
+
+    // モーダル処理
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalList = document.getElementById('modal-list');
+    const closeBtn = document.getElementById('close-modal');
+
+    function showModal(map, matches) {
+      modalTitle.textContent = `${map} の試合詳細`;
+      modalList.innerHTML = '';
+      matches.forEach((match, i) => {
+        const li = document.createElement('li');
+        li.textContent = `試合${i + 1}: K/D = ${match.kd}, HS% = ${match.hs}`;
+        modalList.appendChild(li);
+      });
+      modal.style.display = 'block';
+    }
+
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+    window.onkeydown = e => { if (e.key === 'Escape') modal.style.display = 'none'; };
   </script>
 </body>
 </html>
