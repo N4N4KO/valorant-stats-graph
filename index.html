@@ -4,106 +4,101 @@
   <meta charset="UTF-8" />
   <title>Valorant 戦績グラフ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
   <style>
     body {
-      font-family: sans-serif;
-      margin: 20px;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 30px;
       background-color: #1e1e2f;
-      color: white;
+      color: #fff;
     }
 
     h1 {
       text-align: center;
+      margin-bottom: 40px;
+      font-size: 2rem;
+      color: #fff;
     }
 
-    .image-row {
+    .dashboard {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-      margin-bottom: 40px;
+      gap: 30px;
+    }
+
+    .image-column, .chart-column {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      align-items: center;
+      flex: 1;
     }
 
     .map-image {
-      width: 200px;
-      border-radius: 8px;
+      width: 100%;
+      max-width: 320px;
+      border-radius: 10px;
       cursor: pointer;
-      transition: transform 0.3s ease;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+      transition: transform 0.2s ease;
     }
 
     .map-image:hover {
-      transform: scale(1.05);
+      transform: scale(1.03);
     }
 
-    .chart-wrapper {
-      background: #2e2e3e;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      margin-bottom: 30px;
+    .chart-box {
+      width: 100%;
+      max-width: 400px;
+      background: #2c2c3e;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
     }
 
-    canvas {
-      width: 100% !important;
-      height: 400px !important;
-    }
-
-    /* モーダル */
-    #modal {
+    .modal {
       display: none;
       position: fixed;
-      z-index: 999;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.7);
+      z-index: 10;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      justify-content: center;
+      align-items: center;
     }
 
-    #modal-content {
-      background-color: #2a2a3d;
-      margin: 10% auto;
+    .modal-content {
+      background: #2c2c3e;
       padding: 20px;
-      border-radius: 8px;
+      border-radius: 10px;
+      color: #fff;
+      max-width: 500px;
       width: 80%;
-      max-width: 600px;
-      color: white;
     }
 
     .close {
       float: right;
-      font-size: 28px;
-      font-weight: bold;
+      font-size: 1.5em;
       cursor: pointer;
     }
 
     ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    ul li {
-      padding: 5px 0;
-      border-bottom: 1px solid #555;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>🧠 Valorant 戦績グラフ</h1>
 
-  <div class="image-row" id="image-row"></div>
-
-  <div class="chart-wrapper">
-    <canvas id="combinedChart"></canvas>
+  <h1>🧠 Valorant 戦績グラフ（スコア順）</h1>
+  <div class="dashboard">
+    <div class="image-column" id="imageColumn"></div>
+    <div class="chart-column" id="chartColumn"></div>
   </div>
 
-  <!-- モーダル -->
-  <div id="modal">
-    <div id="modal-content">
-      <span class="close" id="close-modal">&times;</span>
-      <h2 id="modal-title"></h2>
-      <ul id="modal-list"></ul>
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h3 id="modalTitle">マップの詳細</h3>
+      <ul id="modalContent"></ul>
     </div>
   </div>
 
@@ -135,106 +130,90 @@
       if (!mapStats[map]) mapStats[map] = { totalKD: 0, totalHS: 0, count: 0, matches: [] };
       mapStats[map].totalKD += kd;
       mapStats[map].totalHS += hs;
-      mapStats[map].matches.push({ kd, hs });
       mapStats[map].count += 1;
+      mapStats[map].matches.push({ kd, hs });
     });
 
-    const imageRow = document.getElementById('image-row');
-    const mapNames = [];
-    const kdAverages = [];
-    const hsAverages = [];
+    const mapStatsList = Object.entries(mapStats).map(([map, stats]) => {
+      const avgKD = stats.totalKD / stats.count;
+      const avgHS = stats.totalHS / stats.count;
+      return {
+        map,
+        avgKD,
+        avgHS,
+        score: avgKD + avgHS,
+        matches: stats.matches
+      };
+    }).sort((a, b) => b.score - a.score);
 
-    Object.entries(mapStats).forEach(([map, stats]) => {
-      const avgKD = (stats.totalKD / stats.count).toFixed(2);
-      const avgHS = (stats.totalHS / stats.count).toFixed(1);
+    const imageCol = document.getElementById('imageColumn');
+    const chartCol = document.getElementById('chartColumn');
 
-      mapNames.push(map);
-      kdAverages.push(avgKD);
-      hsAverages.push(avgHS);
-
+    mapStatsList.forEach(({ map, avgKD, avgHS, matches }, index) => {
       const img = document.createElement('img');
       img.src = mapImages[map];
-      img.className = 'map-image';
       img.alt = map;
+      img.className = 'map-image';
       img.title = `${map} の試合詳細を表示`;
+      img.addEventListener('click', () => showModal(map, matches));
+      imageCol.appendChild(img);
 
-      img.addEventListener('click', () => showModal(map, stats.matches));
-      imageRow.appendChild(img);
-    });
+      const canvas = document.createElement('canvas');
+      canvas.id = `chart-${index}`;
+      const chartBox = document.createElement('div');
+      chartBox.className = 'chart-box';
+      chartBox.appendChild(canvas);
+      chartCol.appendChild(chartBox);
 
-    // 複合グラフ描画
-    const ctx = document.getElementById('combinedChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: mapNames,
-        datasets: [
-          {
-            label: '平均K/D',
-            data: kdAverages,
-            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-            yAxisID: 'y-kd'
-          },
-          {
-            label: '平均HS%',
-            data: hsAverages,
-            backgroundColor: 'rgba(255, 99, 132, 0.7)',
-            yAxisID: 'y-hs'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          'y-kd': {
-            type: 'linear',
-            position: 'left',
-            beginAtZero: true,
-            max: 2,
-            ticks: { color: 'white' }
-          },
-          'y-hs': {
-            type: 'linear',
-            position: 'right',
-            beginAtZero: true,
-            max: 100,
-            grid: { drawOnChartArea: false },
-            ticks: { color: 'white' }
-          },
-          x: {
-            ticks: { color: 'white' }
-          }
+      new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: ['平均K/D', '平均HS%'],
+          datasets: [{
+            label: `${map} 戦績`,
+            data: [avgKD.toFixed(2), avgHS.toFixed(1)],
+            backgroundColor: ['rgba(54, 162, 235, 0.7)', 'rgba(255, 99, 132, 0.7)']
+          }]
         },
-        plugins: {
-          legend: {
-            labels: {
-              color: 'white'
+        options: {
+          plugins: {
+            datalabels: {
+              color: '#fff',
+              anchor: 'end',
+              align: 'start',
+              font: {
+                weight: 'bold',
+                size: 14
+              },
+              formatter: (val) => val
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100
             }
           }
-        }
-      }
+        },
+        plugins: [ChartDataLabels]
+      });
     });
 
-    // モーダル処理
-    const modal = document.getElementById('modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalList = document.getElementById('modal-list');
-    const closeBtn = document.getElementById('close-modal');
-
     function showModal(map, matches) {
-      modalTitle.textContent = `${map} の試合詳細`;
-      modalList.innerHTML = '';
-      matches.forEach((match, i) => {
+      document.getElementById('modalTitle').textContent = `${map} の試合詳細`;
+      const content = document.getElementById('modalContent');
+      content.innerHTML = '';
+      matches.forEach((m, i) => {
         const li = document.createElement('li');
-        li.textContent = `試合${i + 1}: K/D = ${match.kd}, HS% = ${match.hs}`;
-        modalList.appendChild(li);
+        li.textContent = `試合${i + 1}: K/D=${m.kd}, HS=${m.hs}%`;
+        content.appendChild(li);
       });
-      modal.style.display = 'block';
+      document.getElementById('modal').style.display = 'flex';
     }
 
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
-    window.onkeydown = e => { if (e.key === 'Escape') modal.style.display = 'none'; };
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
   </script>
 </body>
 </html>
