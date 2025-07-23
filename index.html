@@ -8,39 +8,56 @@
     body {
       font-family: sans-serif;
       margin: 20px;
-      background-color: #f5f5f5;
+      background-color: #1e1e2f;
+      color: white;
     }
+
+    h1 {
+      text-align: center;
+    }
+
     .map-section {
-      margin-bottom: 40px;
-      background: white;
-      padding: 15px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      background: #2e2e3e;
+      padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .map-info {
       display: flex;
       flex-direction: column;
       align-items: center;
+      max-width: 300px;
     }
+
     .map-image {
-      width: 80%;
-      max-width: 600px;
+      width: 100%;
       border-radius: 8px;
-      margin-bottom: 10px;
+      margin-top: 10px;
     }
-    .chart-row {
+
+    .chart-group {
       display: flex;
+      flex-direction: row;
+      gap: 30px;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 20px;
     }
+
     canvas {
-      max-width: 300px;
-      max-height: 250px;
+      width: 300px !important;
+      height: 250px !important;
     }
   </style>
 </head>
 <body>
   <h1>🧠 Valorant マップ別戦績グラフ</h1>
-
   <div id="charts-container"></div>
 
   <script>
@@ -66,7 +83,6 @@
       "Haven": "https://img.gamewith.jp/article/thumbnail/rectangle_l/355148.png?date=1659955497"
     };
 
-    // 平均を出す
     const mapStats = {};
     matchData.forEach(({ map, kd, hs }) => {
       if (!mapStats[map]) mapStats[map] = { totalKD: 0, totalHS: 0, count: 0 };
@@ -75,7 +91,6 @@
       mapStats[map].count += 1;
     });
 
-    // DOM生成 & Chart描画
     const container = document.getElementById('charts-container');
 
     Object.entries(mapStats).forEach(([map, stats], i) => {
@@ -85,26 +100,51 @@
       const section = document.createElement('div');
       section.className = 'map-section';
 
+      const mapInfo = document.createElement('div');
+      mapInfo.className = 'map-info';
+      mapInfo.innerHTML = `<h2>${map}</h2>`;
+
       const img = document.createElement('img');
       img.src = mapImages[map] || "";
       img.alt = map;
       img.className = 'map-image';
 
-      const chartRow = document.createElement('div');
-      chartRow.className = 'chart-row';
+      mapInfo.appendChild(img);
+
+      const chartGroup = document.createElement('div');
+      chartGroup.className = 'chart-group';
 
       const kdCanvas = document.createElement('canvas');
       const hsCanvas = document.createElement('canvas');
       kdCanvas.id = `kdChart-${i}`;
       hsCanvas.id = `hsChart-${i}`;
 
-      chartRow.appendChild(kdCanvas);
-      chartRow.appendChild(hsCanvas);
+      chartGroup.appendChild(kdCanvas);
+      chartGroup.appendChild(hsCanvas);
 
-      section.innerHTML += `<h2>${map}</h2>`;
-      section.appendChild(img);
-      section.appendChild(chartRow);
+      section.appendChild(mapInfo);
+      section.appendChild(chartGroup);
       container.appendChild(section);
+
+      // グラフ平均線の追加用
+      const targetLine = {
+        id: 'targetLine',
+        beforeDraw: chart => {
+          const ctx = chart.ctx;
+          const yAxis = chart.scales['y'];
+          const yValue = map === "K/D" ? 1.0 : 25;
+          const y = yAxis.getPixelForValue(yValue);
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(chart.chartArea.left, y);
+          ctx.lineTo(chart.chartArea.right, y);
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([5, 5]);
+          ctx.stroke();
+          ctx.restore();
+        }
+      };
 
       new Chart(kdCanvas, {
         type: 'bar',
@@ -117,10 +157,21 @@
           }]
         },
         options: {
+          plugins: {
+            legend: { display: false }
+          },
           scales: {
-            y: { beginAtZero: true, max: 2 }
+            y: {
+              beginAtZero: true,
+              max: 2,
+              ticks: { color: 'white' }
+            },
+            x: {
+              ticks: { color: 'white' }
+            }
           }
-        }
+        },
+        plugins: [targetLine]
       });
 
       new Chart(hsCanvas, {
@@ -134,8 +185,18 @@
           }]
         },
         options: {
+          plugins: {
+            legend: { display: false }
+          },
           scales: {
-            y: { beginAtZero: true, max: 100 }
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { color: 'white' }
+            },
+            x: {
+              ticks: { color: 'white' }
+            }
           }
         }
       });
