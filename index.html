@@ -16,45 +16,36 @@
       text-align: center;
     }
 
-    .map-section {
+    .image-row {
       display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .map-image {
+      width: 200px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .map-image:hover {
+      transform: scale(1.05);
+    }
+
+    .chart-wrapper {
       background: #2e2e3e;
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
       margin-bottom: 30px;
-      flex-wrap: wrap;
-    }
-
-    .map-info {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      max-width: 300px;
-      cursor: pointer;
-    }
-
-    .map-image {
-      width: 100%;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-
-    .chart-group {
-      display: flex;
-      flex-direction: row;
-      gap: 30px;
-      flex-wrap: wrap;
-      justify-content: center;
     }
 
     canvas {
-      width: 300px !important;
-      height: 250px !important;
-      cursor: pointer;
+      width: 100% !important;
+      height: 400px !important;
     }
 
     /* モーダル */
@@ -99,8 +90,13 @@
   </style>
 </head>
 <body>
-  <h1>🧠 Valorant マップ別戦績グラフ</h1>
-  <div id="charts-container"></div>
+  <h1>🧠 Valorant 戦績グラフ</h1>
+
+  <div class="image-row" id="image-row"></div>
+
+  <div class="chart-wrapper">
+    <canvas id="combinedChart"></canvas>
+  </div>
 
   <!-- モーダル -->
   <div id="modal">
@@ -143,86 +139,80 @@
       mapStats[map].count += 1;
     });
 
-    const container = document.getElementById('charts-container');
+    const imageRow = document.getElementById('image-row');
+    const mapNames = [];
+    const kdAverages = [];
+    const hsAverages = [];
 
-    Object.entries(mapStats).forEach(([map, stats], i) => {
+    Object.entries(mapStats).forEach(([map, stats]) => {
       const avgKD = (stats.totalKD / stats.count).toFixed(2);
       const avgHS = (stats.totalHS / stats.count).toFixed(1);
 
-      const section = document.createElement('div');
-      section.className = 'map-section';
-
-      const mapInfo = document.createElement('div');
-      mapInfo.className = 'map-info';
-      mapInfo.innerHTML = `<h2>${map}</h2>`;
+      mapNames.push(map);
+      kdAverages.push(avgKD);
+      hsAverages.push(avgHS);
 
       const img = document.createElement('img');
-      img.src = mapImages[map] || "";
-      img.alt = map;
+      img.src = mapImages[map];
       img.className = 'map-image';
+      img.alt = map;
+      img.title = `${map} の試合詳細を表示`;
 
-      // クリックでモーダル表示
-      mapInfo.addEventListener('click', () => showModal(map, stats.matches));
       img.addEventListener('click', () => showModal(map, stats.matches));
+      imageRow.appendChild(img);
+    });
 
-      mapInfo.appendChild(img);
-
-      const chartGroup = document.createElement('div');
-      chartGroup.className = 'chart-group';
-
-      const kdCanvas = document.createElement('canvas');
-      const hsCanvas = document.createElement('canvas');
-      kdCanvas.id = `kdChart-${i}`;
-      hsCanvas.id = `hsChart-${i}`;
-
-      // グラフクリックでモーダル
-      kdCanvas.addEventListener('click', () => showModal(map, stats.matches));
-      hsCanvas.addEventListener('click', () => showModal(map, stats.matches));
-
-      chartGroup.appendChild(kdCanvas);
-      chartGroup.appendChild(hsCanvas);
-
-      section.appendChild(mapInfo);
-      section.appendChild(chartGroup);
-      container.appendChild(section);
-
-      new Chart(kdCanvas, {
-        type: 'bar',
-        data: {
-          labels: [map],
-          datasets: [{
+    // 複合グラフ描画
+    const ctx = document.getElementById('combinedChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: mapNames,
+        datasets: [
+          {
             label: '平均K/D',
-            data: [avgKD],
-            backgroundColor: 'rgba(54, 162, 235, 0.7)'
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, max: 2, ticks: { color: 'white' } },
-            x: { ticks: { color: 'white' } }
-          }
-        }
-      });
-
-      new Chart(hsCanvas, {
-        type: 'bar',
-        data: {
-          labels: [map],
-          datasets: [{
+            data: kdAverages,
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            yAxisID: 'y-kd'
+          },
+          {
             label: '平均HS%',
-            data: [avgHS],
-            backgroundColor: 'rgba(255, 99, 132, 0.7)'
-          }]
+            data: hsAverages,
+            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+            yAxisID: 'y-hs'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          'y-kd': {
+            type: 'linear',
+            position: 'left',
+            beginAtZero: true,
+            max: 2,
+            ticks: { color: 'white' }
+          },
+          'y-hs': {
+            type: 'linear',
+            position: 'right',
+            beginAtZero: true,
+            max: 100,
+            grid: { drawOnChartArea: false },
+            ticks: { color: 'white' }
+          },
+          x: {
+            ticks: { color: 'white' }
+          }
         },
-        options: {
-          plugins: { legend: { display: false } },
-          scales: {
-            y: { beginAtZero: true, max: 100, ticks: { color: 'white' } },
-            x: { ticks: { color: 'white' } }
+        plugins: {
+          legend: {
+            labels: {
+              color: 'white'
+            }
           }
         }
-      });
+      }
     });
 
     // モーダル処理
