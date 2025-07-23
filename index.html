@@ -4,6 +4,29 @@
   <meta charset="UTF-8" />
   <title>Valorant Stats Graph</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .map-images {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .map-images img {
+      width: 120px;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .map-label {
+      text-align: center;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    .map-container {
+      text-align: center;
+      margin: 10px;
+    }
+  </style>
 </head>
 <body>
   <h1>Valorant マップごとの勝率・K/D・HS率グラフ</h1>
@@ -50,9 +73,9 @@
     new Chart(ctx, config);
   </script>
 
-  <h2>🧠 Valorant 戦績グラフ</h2>
-  <canvas id="kdChart" width="400" height="200"></canvas>
-  <canvas id="hsChart" width="400" height="200"></canvas>
+  <h2>🧠 Valorant 戦績グラフ（マップごと平均）</h2>
+  <canvas id="kdChart" width="600" height="300"></canvas>
+  <canvas id="hsChart" width="600" height="300"></canvas>
 
   <script>
     const matchData = [
@@ -68,17 +91,28 @@
       { map: "Ascent", kd: 0.7, hs: 32 }
     ];
 
-    const maps = matchData.map(m => m.map);
-    const kdData = matchData.map(m => m.kd);
-    const hsData = matchData.map(m => m.hs);
+    const mapStats = {};
+
+    matchData.forEach(({ map, kd, hs }) => {
+      if (!mapStats[map]) {
+        mapStats[map] = { kdSum: 0, hsSum: 0, count: 0 };
+      }
+      mapStats[map].kdSum += kd;
+      mapStats[map].hsSum += hs;
+      mapStats[map].count++;
+    });
+
+    const maps = Object.keys(mapStats);
+    const avgKdData = maps.map(map => mapStats[map].kdSum / mapStats[map].count);
+    const avgHsData = maps.map(map => mapStats[map].hsSum / mapStats[map].count);
 
     new Chart(document.getElementById("kdChart"), {
       type: 'bar',
       data: {
         labels: maps,
         datasets: [{
-          label: 'K/D',
-          data: kdData,
+          label: '平均 K/D',
+          data: avgKdData,
           backgroundColor: 'rgba(54, 162, 235, 0.6)'
         }]
       },
@@ -94,8 +128,8 @@
       data: {
         labels: maps,
         datasets: [{
-          label: 'HS%',
-          data: hsData,
+          label: '平均 HS%',
+          data: avgHsData,
           backgroundColor: 'rgba(255, 99, 132, 0.6)'
         }]
       },
@@ -106,5 +140,34 @@
       }
     });
   </script>
+
+  <!-- マップ画像表示 -->
+  <div class="map-images">
+    <div class="map-container">
+      <img src="https://vnoco.jp/guide/wp-content/uploads/2023/12/valorant-map-4.jpg" alt="Ascent">
+      <div class="map-label">Ascent</div>
+    </div>
+    <div class="map-container">
+      <img src="https://img.gamewith.jp/img/fe86522d40ce292ca0f71d65e784913d.png" alt="Bind">
+      <div class="map-label">Bind</div>
+    </div>
+    <div class="map-container">
+      <img src="https://img.gamewith.jp/article/thumbnail/rectangle_l/355148.png?date=1659955497" alt="Haven">
+      <div class="map-label">Haven</div>
+    </div>
+    <div class="map-container">
+      <img src="https://img.gamewith.jp/article/thumbnail/rectangle_l/383220.png?date=1673504785" alt="Lotus">
+      <div class="map-label">Lotus</div>
+    </div>
+    <div class="map-container">
+      <img src="https://img.gamewith.jp/article/thumbnail/rectangle/394659.png" alt="Icebox">
+      <div class="map-label">Icebox</div>
+    </div>
+    <div class="map-container">
+      <img src="https://assets.st-note.com/production/uploads/images/198723725/rectangle_large_type_2_cbc04c45d62273e178dec421dbe219a1.png?width=1200" alt="Corrode">
+      <div class="map-label">Corrode</div>
+    </div>
+  </div>
+
 </body>
 </html>
