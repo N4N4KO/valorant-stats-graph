@@ -18,55 +18,53 @@
       color: #61dafb;
       text-shadow: 0 0 8px #61dafb;
     }
-    .map-section {
-      background: #2c2f42;
-      border-radius: 14px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
-      margin-bottom: 50px;
-      padding: 20px;
-    }
-    .map-section h2 {
-      margin: 0 0 15px 0;
-      color: #61dafb;
-      text-align: center;
-      font-weight: 700;
-      text-shadow: 0 0 6px #61dafb;
-    }
-    .dashboard {
+    .all-charts-wrapper {
       display: flex;
+      overflow-x: auto;
       gap: 40px;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: flex-start;
+      padding-bottom: 20px;
     }
-    .image-column {
-      flex: 1 1 280px;
+    .chart-card {
+      background: #2c2f42;
+      padding: 16px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+      min-width: 320px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 15px;
     }
-    .image-column img {
-      width: 280px;
+    .chart-card h2 {
+      color: #61dafb;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .chart-card img {
+      width: 260px;
       border-radius: 12px;
       box-shadow: 0 0 10px #61dafb80;
-      user-select: none;
+      margin-bottom: 14px;
     }
-    .chart-column {
-      flex: 2 1 600px;
-      display: flex;
-      flex-direction: row;
-      gap: 30px;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      justify-content: flex-start;
-    }
-    canvas {
-      max-width: 280px !important;
-      max-height: 220px !important;
+    .chart-card canvas {
+      margin-bottom: 10px;
       background: #1f2233;
       border-radius: 12px;
       box-shadow: 0 0 8px #61dafb70;
+    }
+    .detail-button {
+      background: #61dafb;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #222;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 0 6px #61dafb88;
+      margin-top: 10px;
+    }
+    .detail-button:hover {
+      background: #21a1f1;
     }
     #modalOverlay {
       display: none;
@@ -107,26 +105,12 @@
     #closeModal:hover {
       background: #21a1f1;
     }
-    .detail-button {
-      background: #61dafb;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 14px;
-      cursor: pointer;
-      font-weight: 600;
-      color: #222;
-      transition: background-color 0.3s ease;
-      box-shadow: 0 0 6px #61dafb88;
-      user-select: none;
-    }
-    .detail-button:hover {
-      background: #21a1f1;
-    }
   </style>
 </head>
 <body>
   <h1>🧠 Valorant マップ別戦績グラフ</h1>
-  <div id="charts-container"></div>
+  <div class="all-charts-wrapper" id="charts-container"></div>
+
   <div id="modalOverlay">
     <div id="modalContent">
       <h3>試合詳細</h3>
@@ -134,6 +118,7 @@
       <button id="closeModal">閉じる</button>
     </div>
   </div>
+
   <script>
     const matchData = [
       { map: "Icebox", kd: 0.7, hs: 20 },
@@ -172,14 +157,11 @@
       avgHS: stats.totalHS / stats.count,
       count: stats.count,
       matches: stats.matches
-    }));
-
-    mapStatsArr.sort((a, b) => (b.avgKD + b.avgHS) - (a.avgKD + a.avgHS));
+    })).sort((a, b) => (b.avgKD + b.avgHS) - (a.avgKD + a.avgHS));
 
     const modalOverlay = document.getElementById('modalOverlay');
     const modalBody = document.getElementById('modalBody');
-    const closeModal = document.getElementById('closeModal');
-    closeModal.onclick = () => { modalOverlay.style.display = 'none'; };
+    document.getElementById('closeModal').onclick = () => modalOverlay.style.display = 'none';
     modalOverlay.onclick = (e) => { if (e.target === modalOverlay) modalOverlay.style.display = 'none'; };
 
     const valueLabelPlugin = {
@@ -201,33 +183,28 @@
     };
 
     const container = document.getElementById('charts-container');
+
     mapStatsArr.forEach(({ map, avgKD, avgHS, matches }, i) => {
-      const section = document.createElement('div');
-      section.className = 'map-section';
+      const card = document.createElement('div');
+      card.className = 'chart-card';
+
       const title = document.createElement('h2');
       title.textContent = map;
-      section.appendChild(title);
-      const dashboard = document.createElement('div');
-      dashboard.className = 'dashboard';
+      card.appendChild(title);
 
-      const imageCol = document.createElement('div');
-      imageCol.className = 'image-column';
       const img = document.createElement('img');
-      img.src = mapImages[map] || "";
+      img.src = mapImages[map] || '';
       img.alt = map;
-      imageCol.appendChild(img);
+      card.appendChild(img);
 
-      const chartCol = document.createElement('div');
-      chartCol.className = 'chart-column';
-
-      const kdCard = document.createElement('div');
-      kdCard.style.display = 'flex';
-      kdCard.style.flexDirection = 'column';
-      kdCard.style.alignItems = 'center';
-      kdCard.style.gap = '8px';
       const kdCanvas = document.createElement('canvas');
       kdCanvas.id = `kdChart-${i}`;
-      kdCard.appendChild(kdCanvas);
+      card.appendChild(kdCanvas);
+
+      const hsCanvas = document.createElement('canvas');
+      hsCanvas.id = `hsChart-${i}`;
+      card.appendChild(hsCanvas);
+
       const detailBtn = document.createElement('button');
       detailBtn.className = 'detail-button';
       detailBtn.textContent = '試合詳細';
@@ -236,24 +213,8 @@
           matches.map((m, idx) => `試合${idx + 1}: K/D = ${m.kd.toFixed(2)}, HS% = ${m.hs.toFixed(1)}%`).join('<br>');
         modalOverlay.style.display = 'flex';
       };
-      kdCard.appendChild(detailBtn);
-
-      const hsCard = document.createElement('div');
-      hsCard.style.display = 'flex';
-      hsCard.style.flexDirection = 'column';
-      hsCard.style.alignItems = 'center';
-      hsCard.style.gap = '8px';
-      const hsCanvas = document.createElement('canvas');
-      hsCanvas.id = `hsChart-${i}`;
-      hsCard.appendChild(hsCanvas);
-
-      chartCol.appendChild(kdCard);
-      chartCol.appendChild(hsCard);
-
-      dashboard.appendChild(imageCol);
-      dashboard.appendChild(chartCol);
-      section.appendChild(dashboard);
-      container.appendChild(section);
+      card.appendChild(detailBtn);
+      container.appendChild(card);
 
       new Chart(kdCanvas, {
         type: 'bar',
