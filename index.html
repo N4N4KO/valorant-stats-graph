@@ -55,10 +55,10 @@
     .chart-column {
       flex: 2 1 600px;
       display: flex;
-      flex-direction: row;  /* 横並び */
+      flex-direction: row;
       gap: 30px;
       flex-wrap: wrap;
-      align-items: center;
+      align-items: flex-start;
       justify-content: flex-start;
     }
     canvas {
@@ -68,7 +68,6 @@
       border-radius: 12px;
       box-shadow: 0 0 8px #61dafb70;
     }
-    /* モーダル背景 */
     #modalOverlay {
       display: none;
       position: fixed;
@@ -78,7 +77,6 @@
       justify-content: center;
       align-items: center;
     }
-    /* モーダル本体 */
     #modalContent {
       background: #2c2f42;
       color: #ddd;
@@ -109,7 +107,6 @@
     #closeModal:hover {
       background: #21a1f1;
     }
-    /* 詳細ボタン */
     .detail-button {
       background: #61dafb;
       border: none;
@@ -120,8 +117,6 @@
       color: #222;
       transition: background-color 0.3s ease;
       box-shadow: 0 0 6px #61dafb88;
-      margin-top: 15px;
-      align-self: center;
       user-select: none;
     }
     .detail-button:hover {
@@ -131,10 +126,7 @@
 </head>
 <body>
   <h1>🧠 Valorant マップ別戦績グラフ</h1>
-
   <div id="charts-container"></div>
-
-  <!-- モーダル -->
   <div id="modalOverlay">
     <div id="modalContent">
       <h3>試合詳細</h3>
@@ -142,7 +134,6 @@
       <button id="closeModal">閉じる</button>
     </div>
   </div>
-
   <script>
     const matchData = [
       { map: "Icebox", kd: 0.7, hs: 20 },
@@ -166,7 +157,6 @@
       "Haven": "https://img.gamewith.jp/article/thumbnail/rectangle_l/355148.png?date=1659955497"
     };
 
-    // 平均を計算
     const mapStats = {};
     matchData.forEach(({ map, kd, hs }) => {
       if (!mapStats[map]) mapStats[map] = { totalKD: 0, totalHS: 0, count: 0, matches: [] };
@@ -176,7 +166,6 @@
       mapStats[map].matches.push({ kd, hs });
     });
 
-    // 平均の計算を加えて配列化
     let mapStatsArr = Object.entries(mapStats).map(([map, stats]) => ({
       map,
       avgKD: stats.totalKD / stats.count,
@@ -185,23 +174,14 @@
       matches: stats.matches
     }));
 
-    // avgKD と avgHS の和で降順ソート（高いほど上に）
     mapStatsArr.sort((a, b) => (b.avgKD + b.avgHS) - (a.avgKD + a.avgHS));
 
-    // モーダル制御
     const modalOverlay = document.getElementById('modalOverlay');
     const modalBody = document.getElementById('modalBody');
     const closeModal = document.getElementById('closeModal');
-    closeModal.onclick = () => {
-      modalOverlay.style.display = 'none';
-    };
-    modalOverlay.onclick = (e) => {
-      if (e.target === modalOverlay) {
-        modalOverlay.style.display = 'none';
-      }
-    };
+    closeModal.onclick = () => { modalOverlay.style.display = 'none'; };
+    modalOverlay.onclick = (e) => { if (e.target === modalOverlay) modalOverlay.style.display = 'none'; };
 
-    // Chart.js用プラグイン：棒グラフに値表示
     const valueLabelPlugin = {
       id: 'valueLabelPlugin',
       afterDatasetsDraw(chart) {
@@ -220,21 +200,16 @@
       }
     };
 
-    // DOM生成
     const container = document.getElementById('charts-container');
-
     mapStatsArr.forEach(({ map, avgKD, avgHS, matches }, i) => {
       const section = document.createElement('div');
       section.className = 'map-section';
-
       const title = document.createElement('h2');
       title.textContent = map;
       section.appendChild(title);
-
       const dashboard = document.createElement('div');
       dashboard.className = 'dashboard';
 
-      // 画像列
       const imageCol = document.createElement('div');
       imageCol.className = 'image-column';
       const img = document.createElement('img');
@@ -242,39 +217,44 @@
       img.alt = map;
       imageCol.appendChild(img);
 
-      // チャート列
       const chartCol = document.createElement('div');
       chartCol.className = 'chart-column';
 
-      // kdチャートキャンバス
+      const kdCard = document.createElement('div');
+      kdCard.style.display = 'flex';
+      kdCard.style.flexDirection = 'column';
+      kdCard.style.alignItems = 'center';
+      kdCard.style.gap = '8px';
       const kdCanvas = document.createElement('canvas');
       kdCanvas.id = `kdChart-${i}`;
-      chartCol.appendChild(kdCanvas);
-
-      // hsチャートキャンバス
-      const hsCanvas = document.createElement('canvas');
-      hsCanvas.id = `hsChart-${i}`;
-      chartCol.appendChild(hsCanvas);
-
-      // 詳細ボタン
+      kdCard.appendChild(kdCanvas);
       const detailBtn = document.createElement('button');
       detailBtn.className = 'detail-button';
       detailBtn.textContent = '試合詳細';
       detailBtn.onclick = () => {
-        // モーダルに試合詳細を表示
         modalBody.innerHTML = `<strong>${map} の試合詳細 (${matches.length}試合)</strong><br><br>` +
-          matches.map((m, idx) => `試合${idx+1}: K/D = ${m.kd.toFixed(2)}, HS% = ${m.hs.toFixed(1)}%`).join('<br>');
+          matches.map((m, idx) => `試合${idx + 1}: K/D = ${m.kd.toFixed(2)}, HS% = ${m.hs.toFixed(1)}%`).join('<br>');
         modalOverlay.style.display = 'flex';
       };
+      kdCard.appendChild(detailBtn);
 
-      chartCol.appendChild(detailBtn);
+      const hsCard = document.createElement('div');
+      hsCard.style.display = 'flex';
+      hsCard.style.flexDirection = 'column';
+      hsCard.style.alignItems = 'center';
+      hsCard.style.gap = '8px';
+      const hsCanvas = document.createElement('canvas');
+      hsCanvas.id = `hsChart-${i}`;
+      hsCard.appendChild(hsCanvas);
+
+      chartCol.appendChild(kdCard);
+      chartCol.appendChild(hsCard);
 
       dashboard.appendChild(imageCol);
       dashboard.appendChild(chartCol);
       section.appendChild(dashboard);
       container.appendChild(section);
 
-      // Chart.js グラフ描画
       new Chart(kdCanvas, {
         type: 'bar',
         data: {
@@ -288,19 +268,10 @@
           }]
         },
         options: {
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 2,
-              ticks: { stepSize: 0.5 }
-            }
-          },
-          plugins: [valueLabelPlugin]
-        }
+          plugins: { legend: { display: false }, tooltip: { enabled: true }, valueLabelPlugin },
+          scales: { y: { beginAtZero: true, max: 2, ticks: { stepSize: 0.5 } } }
+        },
+        plugins: [valueLabelPlugin]
       });
 
       new Chart(hsCanvas, {
@@ -316,19 +287,10 @@
           }]
         },
         options: {
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              ticks: { stepSize: 20 }
-            }
-          },
-          plugins: [valueLabelPlugin]
-        }
+          plugins: { legend: { display: false }, tooltip: { enabled: true }, valueLabelPlugin },
+          scales: { y: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } }
+        },
+        plugins: [valueLabelPlugin]
       });
     });
   </script>
