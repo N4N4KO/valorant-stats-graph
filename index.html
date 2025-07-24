@@ -18,6 +18,19 @@
       color: #61dafb;
       text-shadow: 0 0 8px #61dafb;
     }
+    .chart-wrapper {
+      background: #2c2f42;
+      padding: 16px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+      margin-bottom: 40px;
+    }
+    canvas {
+      background: #1f2233;
+      border-radius: 12px;
+      box-shadow: 0 0 8px #61dafb70;
+      margin-bottom: 20px;
+    }
     .all-charts-wrapper {
       display: flex;
       overflow-x: auto;
@@ -44,12 +57,6 @@
       border-radius: 12px;
       box-shadow: 0 0 10px #61dafb80;
       margin-bottom: 14px;
-    }
-    .chart-card canvas {
-      margin-bottom: 10px;
-      background: #1f2233;
-      border-radius: 12px;
-      box-shadow: 0 0 8px #61dafb70;
     }
     .detail-button {
       background: #61dafb;
@@ -109,6 +116,12 @@
 </head>
 <body>
   <h1>🧠 Valorant マップ別戦績グラフ</h1>
+
+  <div class="chart-wrapper">
+    <canvas id="kdChart"></canvas>
+    <canvas id="hsChart"></canvas>
+  </div>
+
   <div class="all-charts-wrapper" id="charts-container"></div>
 
   <div id="modalOverlay">
@@ -151,7 +164,7 @@
       mapStats[map].matches.push({ kd, hs });
     });
 
-    let mapStatsArr = Object.entries(mapStats).map(([map, stats]) => ({
+    const mapStatsArr = Object.entries(mapStats).map(([map, stats]) => ({
       map,
       avgKD: stats.totalKD / stats.count,
       avgHS: stats.totalHS / stats.count,
@@ -182,9 +195,48 @@
       }
     };
 
-    const container = document.getElementById('charts-container');
+    const maps = mapStatsArr.map(s => s.map);
+    const avgKDs = mapStatsArr.map(s => s.avgKD);
+    const avgHSs = mapStatsArr.map(s => s.avgHS);
 
-    mapStatsArr.forEach(({ map, avgKD, avgHS, matches }, i) => {
+    new Chart(document.getElementById('kdChart'), {
+      type: 'bar',
+      data: {
+        labels: maps,
+        datasets: [{
+          label: '平均K/D',
+          data: avgKDs,
+          backgroundColor: 'rgba(54, 162, 235, 0.85)',
+          borderRadius: 8
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false }, tooltip: { enabled: true }, valueLabelPlugin },
+        scales: { y: { beginAtZero: true, max: 2, ticks: { stepSize: 0.5 } } }
+      },
+      plugins: [valueLabelPlugin]
+    });
+
+    new Chart(document.getElementById('hsChart'), {
+      type: 'bar',
+      data: {
+        labels: maps,
+        datasets: [{
+          label: '平均HS%',
+          data: avgHSs,
+          backgroundColor: 'rgba(255, 99, 132, 0.85)',
+          borderRadius: 8
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false }, tooltip: { enabled: true }, valueLabelPlugin },
+        scales: { y: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } }
+      },
+      plugins: [valueLabelPlugin]
+    });
+
+    const container = document.getElementById('charts-container');
+    mapStatsArr.forEach(({ map, matches }) => {
       const card = document.createElement('div');
       card.className = 'chart-card';
 
@@ -197,14 +249,6 @@
       img.alt = map;
       card.appendChild(img);
 
-      const kdCanvas = document.createElement('canvas');
-      kdCanvas.id = `kdChart-${i}`;
-      card.appendChild(kdCanvas);
-
-      const hsCanvas = document.createElement('canvas');
-      hsCanvas.id = `hsChart-${i}`;
-      card.appendChild(hsCanvas);
-
       const detailBtn = document.createElement('button');
       detailBtn.className = 'detail-button';
       detailBtn.textContent = '試合詳細';
@@ -215,44 +259,6 @@
       };
       card.appendChild(detailBtn);
       container.appendChild(card);
-
-      new Chart(kdCanvas, {
-        type: 'bar',
-        data: {
-          labels: ['平均K/D'],
-          datasets: [{
-            label: '平均K/D',
-            data: [avgKD],
-            backgroundColor: 'rgba(54, 162, 235, 0.85)',
-            borderRadius: 8,
-            maxBarThickness: 50
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false }, tooltip: { enabled: true }, valueLabelPlugin },
-          scales: { y: { beginAtZero: true, max: 2, ticks: { stepSize: 0.5 } } }
-        },
-        plugins: [valueLabelPlugin]
-      });
-
-      new Chart(hsCanvas, {
-        type: 'bar',
-        data: {
-          labels: ['平均HS%'],
-          datasets: [{
-            label: '平均HS%',
-            data: [avgHS],
-            backgroundColor: 'rgba(255, 99, 132, 0.85)',
-            borderRadius: 8,
-            maxBarThickness: 50
-          }]
-        },
-        options: {
-          plugins: { legend: { display: false }, tooltip: { enabled: true }, valueLabelPlugin },
-          scales: { y: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } }
-        },
-        plugins: [valueLabelPlugin]
-      });
     });
   </script>
 </body>
